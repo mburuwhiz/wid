@@ -901,5 +901,19 @@ All user-facing messages must be modern, friendly, and actionable. Use emoji ico
 **Status:** Production Ready
 
 ---
+## **EXPORTED PDF PROPERTIES:**
 
-You can now copy this entire specification and save it as `WHIZIP_PRO_FINAL_PROMPT.txt` or provide it directly to your developer.
+- Document properties
+File name:	{{thefilename}}.pdf
+File size:	1,513 KB
+Title:	{{Batchname}}
+Author:	whizpoint Solutions
+Subject:	institution Id
+Keywords:	id cards, printing, WhizId
+Created:	{{Time exported}}
+Modified:	- {{time created/ Modified}}
+Application:	WhizID Pro
+PDF producer:	WhizID Pro
+PDF version:	1.0.0
+Page count:	{{Page_Count}}
+Page size:	8.26 × 11.69 in (portrait)
