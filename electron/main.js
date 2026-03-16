@@ -12,9 +12,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Optional: create a temp dir for autosave
-const tempDir = path.join(os.tmpdir(), 'whizid-autosave');
-if (!fs.existsSync(tempDir)) {
-    fs.mkdirSync(tempDir, { recursive: true });
+const autosaveDir = path.join(os.tmpdir(), 'whizid-autosave');
+if (!fs.existsSync(autosaveDir)) {
+    fs.mkdirSync(autosaveDir, { recursive: true });
 }
 
 const extractBaseDir = path.join(os.tmpdir(), 'whizid-extracts');
@@ -105,6 +105,21 @@ ipcMain.handle('dialog-open', async (event, options) => {
 ipcMain.handle('dialog-save', async (event, options) => {
   const result = await dialog.showSaveDialog(mainWindow, options);
   return result;
+});
+
+// Autosave Check on Startup
+ipcMain.handle('check-autosave', async () => {
+    try {
+        const files = fs.readdirSync(autosaveDir);
+        // Find the most recent autosave
+        const wzipFiles = files.filter(f => f.endsWith('.wzid')).sort().reverse();
+        if (wzipFiles.length > 0) {
+            return path.join(autosaveDir, wzipFiles[0]);
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
 });
 
 // File System - Read directory
@@ -263,10 +278,43 @@ ipcMain.handle('save-wzid', async (event, params) => {
             // In reality, we would copy imagePaths into images/ and thumbnails/
 
             archive.finalize();
+
+            // Clean up old autosaves if this is an autosave
+            if (params.isAutosave) {
+                try {
+                    const files = fs.readdirSync(autosaveDir);
+                    const wzipFiles = files.filter(f => f.endsWith('.wzid')).sort();
+                    // Keep last 5
+                    if (wzipFiles.length > 5) {
+                        for (let i = 0; i < wzipFiles.length - 5; i++) {
+                            fs.unlinkSync(path.join(autosaveDir, wzipFiles[i]));
+                        }
+                    }
+                } catch(e) {
+                    console.error("Failed to clean up autosaves", e);
+                }
+            }
         } catch (error) {
             reject(error);
         }
     });
+});
+
+ipcMain.handle('get-autosave-path', async () => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    return path.join(autosaveDir, `autosave_${timestamp}.wzid`);
+});
+
+ipcMain.handle('discard-autosave', async (event, filePath) => {
+    try {
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            return true;
+        }
+    } catch(e) {
+        console.error("Failed to discard autosave", e);
+    }
+    return false;
 });
 
 ipcMain.handle('load-wzid', async (event, filePath) => {

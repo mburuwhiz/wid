@@ -14,4 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   generatePdf: (params) => ipcRenderer.invoke('generate-pdf', params),
   saveWzip: (params) => ipcRenderer.invoke('save-wzid', params),
   loadWzip: (filePath) => ipcRenderer.invoke('load-wzid', filePath),
+  checkAutosave: () => ipcRenderer.invoke('check-autosave'),
+  getAutosavePath: () => ipcRenderer.invoke('get-autosave-path'),
+  discardAutosave: (path) => ipcRenderer.invoke('discard-autosave', path)
 });

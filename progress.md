@@ -32,7 +32,7 @@
 - ✅ Inject PDF metadata (Title, Author, Subject)
 
 ## Phase 6: Refinement & Advanced Features (In Progress)
-- ⏳ Undo/Redo Engine (50-step history)
+- ✅ Undo/Redo Engine (50-step history)
 - ⏳ Single Record editing / overrides
 - ⏳ Advanced tools: Shapes (Ellipse, Line), Barcode/QR generator
 - ⏳ Dynamic Context Menus for specific tool styling

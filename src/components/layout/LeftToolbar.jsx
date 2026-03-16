@@ -40,6 +40,47 @@ export default function LeftToolbar() {
     }
   };
 
+  const handleAddEllipse = () => {
+    if (window.fabricCanvas) {
+      const ellipse = new window.fabric.Ellipse({
+        left: window.fabricCanvas.width / 2,
+        top: window.fabricCanvas.height / 2,
+        fill: '#cccccc',
+        rx: 50,
+        ry: 50,
+        originX: 'center',
+        originY: 'center',
+      });
+      window.fabricCanvas.add(ellipse);
+      window.fabricCanvas.setActiveObject(ellipse);
+      setHasUnsavedChanges(true);
+    }
+  };
+
+  const handleAddBarcode = () => {
+    if (window.fabricCanvas) {
+      // Placeholder representation for a barcode/QR
+      const barcodeGroup = new window.fabric.Group([
+          new window.fabric.Rect({
+              width: 150, height: 50, fill: '#ffffff', stroke: '#000', originX: 'center', originY: 'center'
+          }),
+          new window.fabric.Text('|| ||| | |||', {
+              fontFamily: 'monospace', fontSize: 30, originX: 'center', originY: 'center', fontWeight: 'bold'
+          })
+      ], {
+          left: window.fabricCanvas.width / 2,
+          top: window.fabricCanvas.height / 2,
+          originX: 'center',
+          originY: 'center',
+      });
+      barcodeGroup.set('isBarcode', true); // Identify as dynamic later if needed
+      window.fabricCanvas.add(barcodeGroup);
+      window.fabricCanvas.setActiveObject(barcodeGroup);
+      setHasUnsavedChanges(true);
+      toast.info('Added Barcode Placeholder. Future logic will bind this to data.');
+    }
+  };
+
   const handleAddPhotoPlaceholder = () => {
     if (window.fabricCanvas) {
       // Create a rect that acts as a placeholder
@@ -157,8 +198,8 @@ export default function LeftToolbar() {
         <ToolButton icon={ImagePlus} label="Photo Placeholder (P)" onClick={handleAddPhotoPlaceholder} />
         <ToolButton icon={ImageIcon} label="Image (I)" onClick={handleAddImage} />
         <ToolButton icon={Square} label="Rectangle (R)" onClick={handleAddRect} />
-        <ToolButton icon={Circle} label="Ellipse (O)" />
-        <ToolButton icon={Barcode} label="Barcode (B)" />
+        <ToolButton icon={Circle} label="Ellipse (O)" onClick={handleAddEllipse} />
+        <ToolButton icon={Barcode} label="Barcode (B)" onClick={handleAddBarcode} />
 
         <div className="w-8 h-px bg-gray-300 dark:bg-gray-600 mx-auto my-2" />
 

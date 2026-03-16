@@ -40,9 +40,37 @@ export default function BottomStatusBar() {
     }
   }, [currentRecordIndex]);
 
+  useEffect(() => {
+    // Autosave interval (every 2 minutes)
+    const autosaveInterval = setInterval(async () => {
+        const state = useStore.getState();
+        // Only autosave if there are unsaved changes
+        if (state.hasUnsavedChanges && window.fabricCanvas && !state.isLivePreviewMode) {
+            try {
+                const autoPath = await window.electronAPI.getAutosavePath();
+                await window.electronAPI.saveWzip({
+                    filePath: autoPath,
+                    layout: window.fabricCanvas.toJSON(),
+                    data: { records: state.records },
+                    meta: { application: "WhizID Pro", version: "1.0.0", is_autosave: true },
+                    calibration: state.calibration,
+                    isAutosave: true
+                });
+                toast('💾 All changes saved automatically', {
+                    duration: 3000,
+                    position: 'bottom-right'
+                });
+            } catch(e) {
+                console.error("Autosave failed", e);
+            }
+        }
+    }, 120000);
+
+    return () => clearInterval(autosaveInterval);
+  }, []);
+
   const applyRecordToCanvas = (record) => {
     if (!record || !window.fabricCanvas || !originalCanvasState.current) return;
-
     // Always start fresh from the base template for the new record
     window.fabricCanvas.loadFromJSON(originalCanvasState.current, () => {
       window.fabricCanvas.getObjects().forEach(obj => {
