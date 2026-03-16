@@ -17,7 +17,7 @@ export default function TitleBar() {
     >
       <div className="flex items-center pl-2 space-x-2">
         <img src="../logo.png" alt="logo" className="w-4 h-4 object-contain" />
-        <span className="text-xs font-semibold">WhizIP Pro - {fileName} - Whizpoint Solutions</span>
+        <span className="text-xs font-semibold">WhizID Pro - {fileName} - Whizpoint Solutions</span>
       </div>
 
       <div className="flex" style={{ WebkitAppRegion: 'no-drag' }}>

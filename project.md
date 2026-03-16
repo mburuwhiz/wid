@@ -8,17 +8,17 @@
 
 ## **PROJECT IDENTITY**
 
-**Application Name:** WhizIP Pro  
+**Application Name:** WhizID Pro
 **Company/Owner:** Whizpoint Solutions  
 **Primary Function:** Enterprise-grade desktop publishing and automated batch ID card design, validation, and precision printing  
-**File Extension:** .wzip (WhizIP Pro Batch Document)  
+**File Extension:** .wzid (WhizID Pro Batch Document)
 **Default Theme:** Light Mode (user can switch to Dark Mode in settings)
 
 **ICON ASSETS (Project Root Directory):**
 - `logo.ico` — Windows application icon, window icon, taskbar icon
 - `logo.png` — macOS/Linux application icon, window icon, dock icon
-- `document-icon.ico` — Windows .wzip file association icon
-- `document-icon.png` — macOS/Linux .wzip file association icon
+- `document-icon.ico` — Windows .wzid file association icon
+- `document-icon.png` — macOS/Linux .wzid file association icon
 
 ---
 
@@ -45,26 +45,26 @@
 ### **DESKTOP BACKEND**
 - Electron.js 25+ (latest stable)
 - IPC Communication: ipcMain/ipcRenderer with contextBridge
-- **Security:** Custom protocol handler `whizip://` for local file access
+- **Security:** Custom protocol handler `whizid://` for local file access
   - Bypasses CSP for local image loading without base64 encoding
 - Node.js Integration: fs, path, os modules via preload script
 - Window Management: Custom frameless window with native controls
 
 ### **DATA PROCESSING LIBRARIES**
 - Excel Parsing: xlsx 0.18+ (SheetJS)
-- File Compression: archiver 5.3+ (create .wzip)
-- File Extraction: unzipper 0.10+ (read .wzip)
+- File Compression: archiver 5.3+ (create .wzid)
+- File Extraction: unzipper 0.10+ (read .wzid)
 - PDF Generation: pdf-lib 1.17+ (A4 layout with mathematical precision)
 - Font Discovery: system-font-families 1.0+ (OS font enumeration)
 
 ### **BUILD & DISTRIBUTION**
 - Build Tool: electron-builder 24+
 - **Configuration Requirements:**
-  - File Association: .wzip extension
-  - File Description: "WhizIP Pro Batch Document"
-  - MIME Type: application/x-whizip
-  - Windows: Context menu "Open with WhizIP Pro"
-  - macOS: Drag-drop .wzip onto dock icon
+  - File Association: .wzid extension
+  - File Description: "WhizID Pro Batch Document"
+  - MIME Type: application/x-whizid
+  - Windows: Context menu "Open with WhizID Pro"
+  - macOS: Drag-drop .wzid onto dock icon
   - Linux: File manager integration
 - Code Signing: Whizpoint Solutions certificate
 - Auto-Updater: electron-updater (optional for v2)
@@ -76,7 +76,7 @@
 ### **CUSTOM TITLE BAR (Frameless Window)**
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ [logo.png 16px] WhizIP Pro - [CurrentFileName.wzip] - Whizpoint Solutions ││                                    ─ □ ✕                                    │
+│ [logo.png 16px] WhizID Pro - [CurrentFileName.wzid] - Whizpoint Solutions ││                                    ─ □ ✕                                    │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 - **Height:** 32px
@@ -202,7 +202,7 @@ Layer 1: Background [👁️] [🔒] ────────
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🆕 New          (Ctrl+N)  │  📂 Open         (Ctrl+O)                      │
-│     Start fresh project   │     Open existing .wzip file                   │
+│     Start fresh project   │     Open existing .wzid file                   │
 ├───────────────────────────┼────────────────────────────────────────────────┤
 │ 💾 Save         (Ctrl+S)  │  💾⬇️ Save As    (Ctrl+Shift+S)                │
 │     Save current state    │     Save with new name/location                │
@@ -251,7 +251,7 @@ Layer 1: Background [👁️] [🔒] ────────
   - Resize operation
   - Delete/Create
   - Style change
-- History persists per session (not saved to .wzip)
+- History persists per session (not saved to .wzid)
 
 **Grid & Snap Settings:**
 - **Grid sizes:** 1mm (default), 2mm, 5mm
@@ -375,8 +375,8 @@ These tabs appear only when relevant object is selected.
 - Multiple matches: Use first found (alphabetical by extension)
 
 **Photo Loading:**
-- Serve via `whizip://` protocol
-- Path: `whizip://[temp-dir]/images/001.jpg`
+- Serve via `whizid://` protocol
+- Path: `whizid://[temp-dir]/images/001.jpg`
 - **NO base64 encoding** (memory optimization)
 - Lazy loading: Load only visible records in preview
 
@@ -459,7 +459,7 @@ Full-screen overlay with data grid.
 
 **Structure (ZIP Archive):**
 ```
-[filename.wzip]
+[filename.wzid]
 ├── layout.json              # Canvas serialization (Fabric.js JSON)
 ├── data.json                # Batch data array + manual overrides
 ├── meta.json                # Batch metadata
@@ -511,7 +511,7 @@ Full-screen overlay with data grid.
 **meta.json:**
 ```json
 {
-  "application": "WhizIP Pro",
+  "application": "WhizID Pro",
   "version": "1.0.0",
   "created": "2026-03-16T23:48:00Z",
   "modified": "2026-03-16T23:48:00Z",
@@ -535,18 +535,18 @@ Full-screen overlay with data grid.
 ### **SAVE PROCESS:**
 1. User presses Ctrl+S or clicks `[💾 Save]`
 2. Show dialog if first save: "Save Batch Document"
-   - Filename: `[BatchName_______________.wzip]`
+   - Filename: `[BatchName_______________.wzid]`
    - Location: `[Browse...]`
    - `[💾 Save]` `[❌ Cancel]`
 3. Serialize canvas to layout.json
 4. Copy matched photos to temp images/ directory
 5. Create ZIP archive with archiver
 6. Save to selected location
-7. Update window title: `"WhizIP Pro - [filename.wzip]"`
+7. Update window title: `"WhizID Pro - [filename.wzid]"`
 8. Show toast: `"✓ Saved successfully"`
 
 ### **LOAD PROCESS:**
-1. User opens .wzip (double-click or File > Open)
+1. User opens .wzid (double-click or File > Open)
 2. Extract to temp directory using unzipper
 3. Validate structure (check required JSON files)
 4. If corrupted: Show recovery dialog
@@ -554,14 +554,14 @@ Full-screen overlay with data grid.
    - `[🔄 Recover]` `[❌ Cancel]`
 5. Load layout.json into canvas
 6. Load data.json into state
-7. Serve images via `whizip://` protocol
+7. Serve images via `whizid://` protocol
 8. Update window title
-9. Show toast: `"✓ [filename.wzip] loaded"`
+9. Show toast: `"✓ [filename.wzid] loaded"`
 
 ### **AUTO-SAVE:**
 - **Interval:** Every 120 seconds (2 minutes)
-- **Location:** OS temp directory /whizip-autosave/
-- **Filename:** autosave_[timestamp].wzip
+- **Location:** OS temp directory /whizid-autosave/
+- **Filename:** autosave_[timestamp].wzid
 - **Max files:** Keep last 5 autosaves
 - **On crash recovery:**
   - Detect autosave files on next launch
@@ -686,7 +686,7 @@ Full-screen overlay with data grid.
 │ Quality: [300 DPI ▼] (150, 300, 600)                                       │
 │                                                                             │
 │ Filename: [BatchName_2026-03-16.pdf______________________________]        │
-│ Location: [C:\Users\Documents\WhizIP Exports\] [Browse...]                 │
+│ Location: [C:\Users\Documents\WhizID Exports\] [Browse...]                 │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                    [❌ Cancel] [📄 Export]  │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -700,7 +700,7 @@ Full-screen overlay with data grid.
 | Shortcut | Action |
 |----------|--------|
 | Ctrl+N | New project |
-| Ctrl+O | Open .wzip file |
+| Ctrl+O | Open .wzid file |
 | Ctrl+S | Save |
 | Ctrl+Shift+S | Save As |
 | Ctrl+Z | Undo |
@@ -770,7 +770,7 @@ All user-facing messages must be modern, friendly, and actionable. Use emoji ico
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 💾 Unsaved Changes                                                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ You have unsaved changes in "Batch_001.wzip".                               │
+│ You have unsaved changes in "Batch_001.wzid".                               │
 │                                                                             │
 │ Save before closing?                                                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
@@ -814,7 +814,7 @@ All user-facing messages must be modern, friendly, and actionable. Use emoji ico
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ 🔄 Recover Unsaved Work?                                                    │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ WhizIP Pro closed unexpectedly at 14:32.                                    │
+│ WhizID Pro closed unexpectedly at 14:32.                                    │
 │ We found an autosave from 2 minutes ago.                                    │
 │                                                                             │
 │ Would you like to restore your work?                                        │
@@ -829,7 +829,7 @@ All user-facing messages must be modern, friendly, and actionable. Use emoji ico
 - "Replace existing photo?" `[🔄 Replace]` `[❌ Cancel]`
 
 ### **Success Messages:**
-- "✅ Design saved to Batch_001.wzip"
+- "✅ Design saved to Batch_001.wzid"
 - "✅ 50 cards exported to PDF successfully"
 - "✅ Calibration profile 'Epson_L805' saved"
 - "✅ Photo uploaded and matched to record #15"
@@ -852,8 +852,8 @@ All user-facing messages must be modern, friendly, and actionable. Use emoji ico
 | **INVALID_FORMAT** | Data type mismatch (date field has text) | "Row 31: Invalid date format in 'dob' field. Expected: DD/MM/YYYY" | Warning only, don't block |
 | **DUPLICATE_RECORD** | Same adm_no or photoid appears multiple times | "Duplicate admission number '1005' found in rows 12 and 45" | Warning with row numbers, allow proceed or cancel |
 | **PLACEHOLDER_MISMATCH** | Design has {{parent}} but Excel has column "guardian" | "Placeholder '{{parent}}' not found in Excel columns. Available: name, guardian, class" | Suggest mapping or auto-match similar names |
-| **FONT_MISSING** | .wzip uses font not installed on current computer | "Font 'Comic Sans MS' not available. Substituted with 'Arial'" | Show warning, use fallback chain |
-| **CORRUPTED_FILE** | .wzip fails integrity check | "File 'Batch_001.wzip' appears corrupted or incomplete" | Offer recovery attempt or cancel |
+| **FONT_MISSING** | .wzid uses font not installed on current computer | "Font 'Comic Sans MS' not available. Substituted with 'Arial'" | Show warning, use fallback chain |
+| **CORRUPTED_FILE** | .wzid fails integrity check | "File 'Batch_001.wzid' appears corrupted or incomplete" | Offer recovery attempt or cancel |
 | **MEMORY_WARNING** | Batch >500 photos or file >100MB | "Large batch detected (600 photos). Performance may be affected." | Suggest splitting batch or continue |
 
 ---

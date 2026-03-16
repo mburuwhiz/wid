@@ -12,12 +12,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Optional: create a temp dir for autosave
-const tempDir = path.join(os.tmpdir(), 'whizip-autosave');
+const tempDir = path.join(os.tmpdir(), 'whizid-autosave');
 if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
 }
 
-const extractBaseDir = path.join(os.tmpdir(), 'whizip-extracts');
+const extractBaseDir = path.join(os.tmpdir(), 'whizid-extracts');
 if (!fs.existsSync(extractBaseDir)) {
     fs.mkdirSync(extractBaseDir, { recursive: true });
 }
@@ -51,9 +51,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  // Register custom protocol whizip:// for local images
-  protocol.registerFileProtocol('whizip', (request, callback) => {
-    const url = request.url.replace('whizip://', '');
+  // Register custom protocol whizid:// for local images
+  protocol.registerFileProtocol('whizid', (request, callback) => {
+    const url = request.url.replace('whizid://', '');
     try {
       const decodedUrl = decodeURIComponent(url);
 
@@ -235,7 +235,7 @@ ipcMain.handle('generate-pdf', async (event, params) => {
 });
 
 // WZIP Archiving
-ipcMain.handle('save-wzip', async (event, params) => {
+ipcMain.handle('save-wzid', async (event, params) => {
     // params = { filePath, layout, data, meta, calibration, thumbnails, imagePaths }
     return new Promise((resolve, reject) => {
         try {
@@ -269,7 +269,7 @@ ipcMain.handle('save-wzip', async (event, params) => {
     });
 });
 
-ipcMain.handle('load-wzip', async (event, filePath) => {
+ipcMain.handle('load-wzid', async (event, filePath) => {
     return new Promise((resolve, reject) => {
         try {
             const extractDir = path.join(extractBaseDir, `extract-${Date.now()}`);
@@ -292,7 +292,7 @@ ipcMain.handle('load-wzip', async (event, filePath) => {
                           extractDir
                       });
                   } catch (e) {
-                      reject("Missing required wzip files");
+                      reject("Missing required wzid files");
                   }
               })
               .on('error', reject);

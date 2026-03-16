@@ -3,9 +3,12 @@ import useStore from '../../store/useStore';
 import { fabric } from 'fabric';
 
 export default function CenterWorkspace() {
-  const { theme, zoomLevel, setZoomLevel, setSelectedObject } = useStore();
+  const { theme, zoomLevel, setZoomLevel, setSelectedObject, saveHistoryState, undo, redo, isLivePreviewMode } = useStore();
   const canvasRef = useRef(null);
   const fabricRef = useRef(null);
+  const isDragging = useRef(false);
+  const lastPosX = useRef(0);
+  const lastPosY = useRef(0);
 
   useEffect(() => {
     // Initialize Fabric.js Canvas
@@ -22,7 +25,7 @@ export default function CenterWorkspace() {
     const fCanvas = fabricRef.current;
 
     // Add a basic grid (optional visualization) or initial text to test
-    const text = new fabric.Text('WhizIP Pro Canvas', {
+    const text = new fabric.Text('WhizID Pro Canvas', {
       left: 300,
       top: 300,
       fontSize: 40,
@@ -36,35 +39,87 @@ export default function CenterWorkspace() {
     fCanvas.on('selection:updated', (e) => setSelectedObject(e.selected[0]));
     fCanvas.on('selection:cleared', () => setSelectedObject(null));
 
-    // Simple Panning (Middle Mouse or Space+Drag implementation later)
+    // Simple Panning (Space+Drag)
     fCanvas.on('mouse:down', function(opt) {
       var evt = opt.e;
-      if (evt.altKey === true) {
-        this.isDragging = true;
-        this.selection = false;
-        this.lastPosX = evt.clientX;
-        this.lastPosY = evt.clientY;
+      if (evt.altKey === true || window.isSpacePressed) {
+        isDragging.current = true;
+        fCanvas.selection = false;
+        lastPosX.current = evt.clientX;
+        lastPosY.current = evt.clientY;
       }
     });
     fCanvas.on('mouse:move', function(opt) {
-      if (this.isDragging) {
+      if (isDragging.current) {
         var e = opt.e;
-        var vpt = this.viewportTransform;
-        vpt[4] += e.clientX - this.lastPosX;
-        vpt[5] += e.clientY - this.lastPosY;
-        this.requestRenderAll();
-        this.lastPosX = e.clientX;
-        this.lastPosY = e.clientY;
+        var vpt = fCanvas.viewportTransform;
+        vpt[4] += e.clientX - lastPosX.current;
+        vpt[5] += e.clientY - lastPosY.current;
+        fCanvas.requestRenderAll();
+        lastPosX.current = e.clientX;
+        lastPosY.current = e.clientY;
       }
     });
     fCanvas.on('mouse:up', function(opt) {
-      this.setViewportTransform(this.viewportTransform);
-      this.isDragging = false;
-      this.selection = true;
+      fCanvas.setViewportTransform(fCanvas.viewportTransform);
+      isDragging.current = false;
+      fCanvas.selection = true;
     });
+
+    // Undo/Redo tracking
+    const trackChanges = (e) => {
+        // Do not track changes during live preview or while history is already updating
+        const state = useStore.getState();
+        if (state.isLivePreviewMode || state.isHistoryUpdating) return;
+        saveHistoryState();
+    };
+
+    fCanvas.on('object:added', trackChanges);
+    fCanvas.on('object:removed', trackChanges);
+    fCanvas.on('object:modified', trackChanges);
+
+    // Initial State Save
+    saveHistoryState();
+
+    // Global Key Handlers
+    const handleKeyDown = (e) => {
+        if (e.code === 'Space') {
+            window.isSpacePressed = true;
+            // Optionally change cursor here
+        }
+        if (e.ctrlKey) {
+            if (e.key === 'z') {
+                e.preventDefault();
+                undo();
+            } else if (e.key === 'y') {
+                e.preventDefault();
+                redo();
+            } else if (e.key === '+' || e.key === '=') {
+                e.preventDefault();
+                setZoomLevel(Math.min(2.0, useStore.getState().zoomLevel + 0.25));
+            } else if (e.key === '-') {
+                e.preventDefault();
+                setZoomLevel(Math.max(0.25, useStore.getState().zoomLevel - 0.25));
+            } else if (e.key === '0') {
+                e.preventDefault();
+                setZoomLevel(1.0);
+            }
+        }
+    };
+
+    const handleKeyUp = (e) => {
+        if (e.code === 'Space') {
+            window.isSpacePressed = false;
+        }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
 
     // Cleanup
     return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
       fCanvas.dispose();
     };
   }, []); // Run once on mount

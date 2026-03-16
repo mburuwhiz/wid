@@ -82,7 +82,7 @@ export default function LeftToolbar() {
         const dirPath = filePath.substring(0, Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\')));
         await window.electronAPI.readDirectory(dirPath);
 
-        const imgUrl = `whizip://${filePath}`;
+        const imgUrl = `whizid://${filePath}`;
 
         window.fabric.Image.fromURL(imgUrl, (img) => {
            // Scale down if too big

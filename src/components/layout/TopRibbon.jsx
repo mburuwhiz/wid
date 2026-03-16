@@ -17,15 +17,15 @@ export default function TopRibbon() {
     try {
       const result = await window.electronAPI.showSaveDialog({
         title: 'Save Batch Document',
-        defaultPath: 'Untitled.wzip',
-        filters: [{ name: 'WhizIP Pro Document', extensions: ['wzip'] }]
+        defaultPath: 'Untitled.wzid',
+        filters: [{ name: 'WhizID Pro Document', extensions: ['wzid'] }]
       });
 
       if (!result.canceled && result.filePath) {
         setLoading(true);
         const layout = window.fabricCanvas.toJSON();
         const data = { records };
-        const meta = { application: "WhizIP Pro", version: "1.0.0", saved_by: "user" };
+        const meta = { application: "WhizID Pro", version: "1.0.0", saved_by: "user" };
 
         toast.promise(
           window.electronAPI.saveWzip({
@@ -78,7 +78,7 @@ export default function TopRibbon() {
              const baseName = lowerFile.slice(0, -ext.length);
              // use the first matching one alphabetically
              if (!fileMap[baseName]) {
-                 fileMap[baseName] = `whizip://${dirPath}/${file}`;
+                 fileMap[baseName] = `whizid://${dirPath}/${file}`;
              }
            }
         });
@@ -112,7 +112,7 @@ export default function TopRibbon() {
     try {
       const result = await window.electronAPI.showOpenDialog({
         properties: ['openFile'],
-        filters: [{ name: 'WhizIP Pro Document', extensions: ['wzip'] }]
+        filters: [{ name: 'WhizID Pro Document', extensions: ['wzid'] }]
       });
 
       if (!result.canceled && result.filePaths.length > 0) {

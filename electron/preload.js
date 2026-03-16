@@ -12,6 +12,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readDirectory: (dirPath) => ipcRenderer.invoke('fs-readdir', dirPath),
   parseExcel: (filePath) => ipcRenderer.invoke('parse-excel', filePath),
   generatePdf: (params) => ipcRenderer.invoke('generate-pdf', params),
-  saveWzip: (params) => ipcRenderer.invoke('save-wzip', params),
-  loadWzip: (filePath) => ipcRenderer.invoke('load-wzip', filePath),
+  saveWzip: (params) => ipcRenderer.invoke('save-wzid', params),
+  loadWzip: (filePath) => ipcRenderer.invoke('load-wzid', filePath),
 });
