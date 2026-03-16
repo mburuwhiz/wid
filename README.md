@@ -14,7 +14,7 @@ Unlike standard web-based ID generators, WhizIP Pro operates locally, utilizing 
 
 * **🎨 Professional Ribbon UI:** A context-sensitive, MS Word-style interface with advanced layer management, OS font integration, and precision alignment tools.
 * **📐 The Precision Print Engine:** Designs are locked to a magnified CR80 ratio (85.6mm x 54mm) and mathematically rendered onto A4 PDF sheets using user-calibrated, millimeter-perfect margins (Top: 30.0mm, Left: 31.2mm, Gutter: 25.4mm).
-* **⚡ Memory-Optimized Batching:** Merges large `.xlsx`/`.csv` datasets with local image folders. Images are served via local `file://` protocols, allowing the app to process batches of 500+ records lightning fast.
+* **⚡ Memory-Optimized Batching:** Merges large `.xlsx`/`.csv` datasets with local image folders. Images are served via local `file://` protocols, allowing the app to process batches of 500+ records lightning fast..
 * **📦 Proprietary `.wzip` Format:** Saves projects by packaging the JSON layout, data arrays, and *only* the successfully matched photos into a single, shareable compressed file.
 * **🛡️ Smart Data Validation:** Built-in Batch Manager that automatically detects missing photos or text fields, isolates failed records, and exports error reports for manual correction.
 
