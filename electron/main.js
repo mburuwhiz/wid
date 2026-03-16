@@ -7,6 +7,7 @@ import unzipper from 'unzipper';
 import * as xlsx from 'xlsx';
 import { PDFDocument, rgb } from 'pdf-lib';
 import { fileURLToPath } from 'url';
+import SystemFonts from 'system-font-families';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -119,6 +120,17 @@ ipcMain.handle('check-autosave', async () => {
         return null;
     } catch (e) {
         return null;
+    }
+});
+
+// Get System Fonts
+ipcMain.handle('get-system-fonts', async () => {
+    try {
+        const systemFonts = new SystemFonts.default();
+        return systemFonts.getFontsSync();
+    } catch (e) {
+        console.error("Failed to load system fonts", e);
+        return ['Arial', 'Times New Roman', 'Courier New', 'Helvetica']; // Fallback
     }
 });
 
@@ -251,7 +263,6 @@ ipcMain.handle('generate-pdf', async (event, params) => {
 
 // WZIP Archiving
 ipcMain.handle('save-wzid', async (event, params) => {
-    // params = { filePath, layout, data, meta, calibration, thumbnails, imagePaths }
     return new Promise((resolve, reject) => {
         try {
             const output = fs.createWriteStream(params.filePath);
@@ -264,18 +275,17 @@ ipcMain.handle('save-wzid', async (event, params) => {
             });
 
             archive.on('error', function(err) {
+                console.error('Archiver error:', err);
                 reject(err);
             });
 
             archive.pipe(output);
 
-            // Add JSON files
-            archive.append(JSON.stringify(params.layout, null, 2), { name: 'layout.json' });
-            archive.append(JSON.stringify(params.data, null, 2), { name: 'data.json' });
-            archive.append(JSON.stringify(params.meta, null, 2), { name: 'meta.json' });
-            archive.append(JSON.stringify(params.calibration, null, 2), { name: 'calibration.json' });
-
-            // In reality, we would copy imagePaths into images/ and thumbnails/
+            // Add JSON files safely ensuring string values
+            archive.append(JSON.stringify(params.layout || {}, null, 2), { name: 'layout.json' });
+            archive.append(JSON.stringify(params.data || { records: [] }, null, 2), { name: 'data.json' });
+            archive.append(JSON.stringify(params.meta || {}, null, 2), { name: 'meta.json' });
+            archive.append(JSON.stringify(params.calibration || {}, null, 2), { name: 'calibration.json' });
 
             archive.finalize();
 
@@ -284,7 +294,6 @@ ipcMain.handle('save-wzid', async (event, params) => {
                 try {
                     const files = fs.readdirSync(autosaveDir);
                     const wzipFiles = files.filter(f => f.endsWith('.wzid')).sort();
-                    // Keep last 5
                     if (wzipFiles.length > 5) {
                         for (let i = 0; i < wzipFiles.length - 5; i++) {
                             fs.unlinkSync(path.join(autosaveDir, wzipFiles[i]));
@@ -295,6 +304,7 @@ ipcMain.handle('save-wzid', async (event, params) => {
                 }
             }
         } catch (error) {
+            console.error('Save error:', error);
             reject(error);
         }
     });
@@ -318,34 +328,27 @@ ipcMain.handle('discard-autosave', async (event, filePath) => {
 });
 
 ipcMain.handle('load-wzid', async (event, filePath) => {
-    return new Promise((resolve, reject) => {
-        try {
-            const extractDir = path.join(extractBaseDir, `extract-${Date.now()}`);
-            fs.mkdirSync(extractDir, { recursive: true });
+    try {
+        const extractDir = path.join(extractBaseDir, `extract-${Date.now()}`);
+        fs.mkdirSync(extractDir, { recursive: true });
 
-            fs.createReadStream(filePath)
-              .pipe(unzipper.Extract({ path: extractDir }))
-              .on('close', () => {
-                  try {
-                      const layoutStr = fs.readFileSync(path.join(extractDir, 'layout.json'), 'utf8');
-                      const dataStr = fs.readFileSync(path.join(extractDir, 'data.json'), 'utf8');
-                      const metaStr = fs.readFileSync(path.join(extractDir, 'meta.json'), 'utf8');
-                      const calibrationStr = fs.readFileSync(path.join(extractDir, 'calibration.json'), 'utf8');
+        const directory = await unzipper.Open.file(filePath);
+        await directory.extract({ path: extractDir });
 
-                      resolve({
-                          layout: JSON.parse(layoutStr),
-                          data: JSON.parse(dataStr),
-                          meta: JSON.parse(metaStr),
-                          calibration: JSON.parse(calibrationStr),
-                          extractDir
-                      });
-                  } catch (e) {
-                      reject("Missing required wzid files");
-                  }
-              })
-              .on('error', reject);
-        } catch (error) {
-            reject(error);
-        }
-    });
+        const layoutStr = fs.readFileSync(path.join(extractDir, 'layout.json'), 'utf8');
+        const dataStr = fs.readFileSync(path.join(extractDir, 'data.json'), 'utf8');
+        const metaStr = fs.readFileSync(path.join(extractDir, 'meta.json'), 'utf8');
+        const calibrationStr = fs.readFileSync(path.join(extractDir, 'calibration.json'), 'utf8');
+
+        return {
+            layout: JSON.parse(layoutStr),
+            data: JSON.parse(dataStr),
+            meta: JSON.parse(metaStr),
+            calibration: JSON.parse(calibrationStr),
+            extractDir
+        };
+    } catch (error) {
+        console.error("Error loading wzid:", error);
+        throw new Error("Failed to load document. File may be corrupted or missing required wzid files.");
+    }
 });

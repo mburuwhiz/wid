@@ -1,16 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useStore from '../../store/useStore';
 import { toast } from 'sonner';
+import { fabric } from 'fabric';
+import {
+  File, FolderOpen, Save, Printer, Download, Undo, Redo,
+  Scissors, Copy, ClipboardPaste, Type, Image as ImageIcon,
+  Square, Circle, ImagePlus, Database, Table, BarChart
+} from 'lucide-react';
 import CalibrationModal from './CalibrationModal';
 import BatchReportModal from './BatchReportModal';
 
 const TABS = ['FILE', 'HOME', 'INSERT', 'BATCH DATA'];
 
 export default function TopRibbon() {
-  const { theme, activeTab, setActiveTab, setRecords, records, calibration, setHasUnsavedChanges, setFileName, setCalibration } = useStore();
+  const {
+    theme, activeTab, setActiveTab, setRecords, records,
+    calibration, setHasUnsavedChanges, setFileName, setCalibration,
+    undo, redo, history, historyIndex
+  } = useStore();
+
   const [loading, setLoading] = useState(false);
   const [showCalibration, setShowCalibration] = useState(false);
   const [showBatchReport, setShowBatchReport] = useState(false);
+  const [availableHeaders, setAvailableHeaders] = useState([]);
+
+  useEffect(() => {
+    if (records.length > 0) {
+      const headers = Object.keys(records[0]).filter(k => !k.startsWith('_'));
+      setAvailableHeaders(headers);
+    } else {
+      setAvailableHeaders([]);
+    }
+  }, [records]);
 
   const handleSaveWzip = async () => {
     if (!window.fabricCanvas) return;
@@ -23,7 +44,7 @@ export default function TopRibbon() {
 
       if (!result.canceled && result.filePath) {
         setLoading(true);
-        const layout = window.fabricCanvas.toJSON();
+        const layout = window.fabricCanvas.toJSON(['isPhotoPlaceholder', 'isBarcode']);
         const data = { records };
         const meta = { application: "WhizID Pro", version: "1.0.0", saved_by: "user" };
 
@@ -189,7 +210,7 @@ export default function TopRibbon() {
 
         // Render each card to base64
         const images = [];
-        const originalState = JSON.stringify(window.fabricCanvas.toJSON());
+        const originalState = JSON.stringify(window.fabricCanvas.toJSON(['isPhotoPlaceholder', 'isBarcode']));
 
         for (let i = 0; i < records.length; i++) {
            const record = records[i];
@@ -264,14 +285,77 @@ export default function TopRibbon() {
     }
   };
 
+  const insertText = (isDynamic = false, header = '') => {
+    if (window.fabricCanvas) {
+      const textVal = isDynamic ? `{{${header}}}` : 'New Text';
+      const text = new fabric.IText(textVal, {
+        left: window.fabricCanvas.width / 2,
+        top: window.fabricCanvas.height / 2,
+        fontFamily: 'Arial',
+        fontSize: 30,
+        fill: '#000000',
+        originX: 'center',
+        originY: 'center',
+      });
+      window.fabricCanvas.add(text);
+      window.fabricCanvas.setActiveObject(text);
+      setHasUnsavedChanges(true);
+    }
+  };
+
+  const insertShape = (type) => {
+    if (!window.fabricCanvas) return;
+    let shape;
+    const center = { left: window.fabricCanvas.width / 2, top: window.fabricCanvas.height / 2 };
+
+    if (type === 'rect') {
+      shape = new fabric.Rect({ ...center, fill: '#cccccc', width: 100, height: 100, originX: 'center', originY: 'center' });
+    } else if (type === 'ellipse') {
+      shape = new fabric.Ellipse({ ...center, fill: '#cccccc', rx: 50, ry: 50, originX: 'center', originY: 'center' });
+    } else if (type === 'photo') {
+      shape = new fabric.Rect({
+        ...center, fill: '#e0e0e0', stroke: '#999999', strokeWidth: 2, strokeDashArray: [5, 5],
+        width: 150, height: 200, originX: 'center', originY: 'center', rx: 20, ry: 20, isPhotoPlaceholder: true
+      });
+    }
+
+    if (shape) {
+      window.fabricCanvas.add(shape);
+      window.fabricCanvas.setActiveObject(shape);
+      setHasUnsavedChanges(true);
+    }
+  };
+
+  const RibbonButton = ({ icon: Icon, label, onClick, disabled, className = "" }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex flex-col items-center justify-center p-2 min-w-[64px] rounded hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+    >
+      <Icon size={24} className="mb-1 text-gray-700 dark:text-gray-300" strokeWidth={1.5} />
+      <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium tracking-wide">{label}</span>
+    </button>
+  );
+
+  const RibbonDivider = () => <div className="w-px h-12 bg-gray-300 dark:bg-gray-600 mx-2" />;
+  const RibbonGroup = ({ title, children }) => (
+    <div className="flex flex-col h-full justify-between items-center px-2">
+      <div className="flex items-center flex-grow space-x-1">
+        {children}
+      </div>
+      <span className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{title}</span>
+    </div>
+  );
+
   return (
     <div className="flex flex-col">
-      <div className={`h-12 border-b flex items-end px-2 select-none ${theme === 'light' ? 'bg-[#f8f9fa] border-[#dee2e6]' : 'bg-[#2d2d2d] border-[#404040] text-white'}`}>
+      {/* Tab Headers */}
+      <div className={`h-10 border-b flex items-end px-2 select-none ${theme === 'light' ? 'bg-[#f8f9fa] border-[#dee2e6]' : 'bg-[#2d2d2d] border-[#404040] text-white'}`}>
         {TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium ${activeTab === tab ? 'border-b-2 border-whizpoint-blue text-whizpoint-blue bg-white dark:bg-[#1e1e1e]' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+            className={`px-4 py-1.5 text-xs font-semibold tracking-wider ${activeTab === tab ? 'border-b-2 border-whizpoint-blue text-whizpoint-blue bg-white dark:bg-[#1e1e1e]' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
           >
             {tab}
           </button>
@@ -279,48 +363,86 @@ export default function TopRibbon() {
         <div className="flex-grow"></div>
       </div>
 
-      {/* Temporary sub-ribbon to show actions for active tab */}
-      <div className={`h-16 border-b flex items-center px-4 space-x-4 ${theme === 'light' ? 'bg-white border-[#dee2e6]' : 'bg-[#1e1e1e] border-[#404040] text-white'}`}>
+      {/* Ribbon Body */}
+      <div className={`h-24 border-b flex items-start pt-1 pb-0 px-2 select-none ${theme === 'light' ? 'bg-white border-[#dee2e6]' : 'bg-[#1e1e1e] border-[#404040] text-white'}`}>
         {activeTab === 'FILE' && (
-           <>
-             <button onClick={handleLoadWzip} disabled={loading} className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-               <span className="text-xl">📂</span>
-               <span className="text-xs mt-1">Open</span>
-             </button>
-             <button onClick={handleSaveWzip} disabled={loading} className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-               <span className="text-xl">💾</span>
-               <span className="text-xs mt-1">Save</span>
-             </button>
-             <div className="w-px h-8 bg-gray-300 dark:bg-gray-600 mx-2" />
-             <button onClick={handleExportPDF} disabled={loading} className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-               <span className="text-xl">📄</span>
-               <span className="text-xs mt-1">Export PDF</span>
-             </button>
-             <div className="w-px h-8 bg-gray-300 dark:bg-gray-600 mx-2" />
-             <button onClick={() => setShowCalibration(true)} disabled={loading} className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-               <span className="text-xl">🖨️</span>
-               <span className="text-xs mt-1">Calibration</span>
-             </button>
-           </>
+           <div className="flex h-full">
+             <RibbonGroup title="Project">
+               <RibbonButton icon={FolderOpen} label="Open" onClick={handleLoadWzip} disabled={loading} />
+               <RibbonButton icon={Save} label="Save" onClick={handleSaveWzip} disabled={loading} />
+             </RibbonGroup>
+             <RibbonDivider />
+             <RibbonGroup title="Export">
+               <RibbonButton icon={Download} label="Export PDF" onClick={handleExportPDF} disabled={loading} />
+               <RibbonButton icon={Printer} label="Print Setup" onClick={() => setShowCalibration(true)} disabled={loading} />
+             </RibbonGroup>
+           </div>
         )}
+
+        {activeTab === 'HOME' && (
+           <div className="flex h-full">
+             <RibbonGroup title="Clipboard">
+               <RibbonButton icon={ClipboardPaste} label="Paste" onClick={() => toast.info('Use Ctrl+V')} />
+               <RibbonButton icon={Scissors} label="Cut" onClick={() => toast.info('Use Ctrl+X')} />
+               <RibbonButton icon={Copy} label="Copy" onClick={() => toast.info('Use Ctrl+C')} />
+             </RibbonGroup>
+             <RibbonDivider />
+             <RibbonGroup title="History">
+               <RibbonButton icon={Undo} label="Undo" onClick={undo} disabled={historyIndex <= 0} />
+               <RibbonButton icon={Redo} label="Redo" onClick={redo} disabled={historyIndex >= history.length - 1} />
+             </RibbonGroup>
+           </div>
+        )}
+
+        {activeTab === 'INSERT' && (
+           <div className="flex h-full">
+             <RibbonGroup title="Text">
+               <RibbonButton icon={Type} label="Static Text" onClick={() => insertText(false)} />
+               <div className="flex flex-col justify-center mx-2">
+                 <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400 mb-1">Dynamic Field:</span>
+                 <select
+                   className="text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-[#2d2d2d] text-gray-700 dark:text-gray-300 px-2 py-1 outline-none w-32"
+                   onChange={(e) => {
+                     if (e.target.value) {
+                       insertText(true, e.target.value);
+                       e.target.value = '';
+                     }
+                   }}
+                 >
+                   <option value="">Select Field...</option>
+                   {availableHeaders.map(h => (
+                     <option key={h} value={h}>{h}</option>
+                   ))}
+                 </select>
+               </div>
+             </RibbonGroup>
+             <RibbonDivider />
+             <RibbonGroup title="Media">
+               <RibbonButton icon={ImageIcon} label="Static Image" onClick={() => toast.info('Use left toolbar for image picker')} />
+               <RibbonButton icon={ImagePlus} label="Photo Slot" onClick={() => insertShape('photo')} />
+             </RibbonGroup>
+             <RibbonDivider />
+             <RibbonGroup title="Shapes">
+               <RibbonButton icon={Square} label="Rectangle" onClick={() => insertShape('rect')} />
+               <RibbonButton icon={Circle} label="Ellipse" onClick={() => insertShape('ellipse')} />
+             </RibbonGroup>
+           </div>
+        )}
+
         {activeTab === 'BATCH DATA' && (
-           <>
-             <button onClick={handleImportExcel} disabled={loading} className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-               <span className="text-xl">📤</span>
-               <span className="text-xs mt-1">Import Excel</span>
-             </button>
-             <button onClick={handleImportPhotos} disabled={loading || records.length === 0} className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded disabled:opacity-50">
-               <span className="text-xl">🖼️</span>
-               <span className="text-xs mt-1">Import Photos</span>
-             </button>
-             <div className="w-px h-8 bg-gray-300 dark:bg-gray-600 mx-2" />
-             <button onClick={() => setShowBatchReport(true)} disabled={loading || records.length === 0} className="flex flex-col items-center justify-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded disabled:opacity-50">
-               <span className="text-xl">📋</span>
-               <span className="text-xs mt-1">Batch Report</span>
-             </button>
-           </>
+           <div className="flex h-full">
+             <RibbonGroup title="Import">
+               <RibbonButton icon={Table} label="Excel / CSV" onClick={handleImportExcel} disabled={loading} />
+               <RibbonButton icon={FolderOpen} label="Photos Folder" onClick={handleImportPhotos} disabled={loading || records.length === 0} />
+             </RibbonGroup>
+             <RibbonDivider />
+             <RibbonGroup title="Report">
+               <RibbonButton icon={BarChart} label="Batch Report" onClick={() => setShowBatchReport(true)} disabled={loading || records.length === 0} />
+             </RibbonGroup>
+           </div>
         )}
-        {loading && <span className="text-xs text-gray-500">Processing...</span>}
+
+        {loading && <span className="text-xs text-gray-500 self-center ml-auto pr-4">Processing...</span>}
       </div>
       {showCalibration && <CalibrationModal onClose={() => setShowCalibration(false)} />}
       {showBatchReport && <BatchReportModal onClose={() => setShowBatchReport(false)} />}

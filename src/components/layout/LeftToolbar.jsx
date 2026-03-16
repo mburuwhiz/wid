@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { fabric } from 'fabric';
 import { MousePointer2, Hand, ZoomIn, Type, Image as ImageIcon, ImagePlus, Square, Circle, Barcode, AlignCenterHorizontal, Settings, Trash2 } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { toast } from 'sonner';
@@ -8,7 +9,7 @@ export default function LeftToolbar() {
 
   const handleAddText = () => {
     if (window.fabricCanvas) {
-      const text = new window.fabric.IText('New Text', {
+      const text = new fabric.IText('New Text', {
         left: window.fabricCanvas.width / 2,
         top: window.fabricCanvas.height / 2,
         fontFamily: 'Arial',
@@ -25,7 +26,7 @@ export default function LeftToolbar() {
 
   const handleAddRect = () => {
     if (window.fabricCanvas) {
-      const rect = new window.fabric.Rect({
+      const rect = new fabric.Rect({
         left: window.fabricCanvas.width / 2,
         top: window.fabricCanvas.height / 2,
         fill: '#cccccc',
@@ -42,7 +43,7 @@ export default function LeftToolbar() {
 
   const handleAddEllipse = () => {
     if (window.fabricCanvas) {
-      const ellipse = new window.fabric.Ellipse({
+      const ellipse = new fabric.Ellipse({
         left: window.fabricCanvas.width / 2,
         top: window.fabricCanvas.height / 2,
         fill: '#cccccc',
@@ -60,11 +61,11 @@ export default function LeftToolbar() {
   const handleAddBarcode = () => {
     if (window.fabricCanvas) {
       // Placeholder representation for a barcode/QR
-      const barcodeGroup = new window.fabric.Group([
-          new window.fabric.Rect({
+      const barcodeGroup = new fabric.Group([
+          new fabric.Rect({
               width: 150, height: 50, fill: '#ffffff', stroke: '#000', originX: 'center', originY: 'center'
           }),
-          new window.fabric.Text('|| ||| | |||', {
+          new fabric.Text('|| ||| | |||', {
               fontFamily: 'monospace', fontSize: 30, originX: 'center', originY: 'center', fontWeight: 'bold'
           })
       ], {
@@ -84,7 +85,7 @@ export default function LeftToolbar() {
   const handleAddPhotoPlaceholder = () => {
     if (window.fabricCanvas) {
       // Create a rect that acts as a placeholder
-      const rect = new window.fabric.Rect({
+      const rect = new fabric.Rect({
         left: window.fabricCanvas.width / 2,
         top: window.fabricCanvas.height / 2,
         fill: '#e0e0e0',
@@ -125,7 +126,7 @@ export default function LeftToolbar() {
 
         const imgUrl = `whizid://${filePath}`;
 
-        window.fabric.Image.fromURL(imgUrl, (img) => {
+        fabric.Image.fromURL(imgUrl, (img) => {
            // Scale down if too big
            if (img.width > 500) img.scaleToWidth(500);
 

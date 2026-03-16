@@ -6,6 +6,23 @@ export default function RightSidebar() {
   const [props, setProps] = useState({ x: 0, y: 0, w: 0, h: 0, angle: 0, opacity: 1 });
   const [colorProps, setColorProps] = useState({ fill: '#000000', stroke: '#000000', strokeWidth: 0 });
   const [fontProps, setFontProps] = useState({ fontFamily: 'Arial', fontSize: 30, fontWeight: 'normal', fontStyle: 'normal' });
+  const [systemFonts, setSystemFonts] = useState(['Arial', 'Times New Roman', 'Courier New', 'Helvetica']);
+
+  useEffect(() => {
+    const loadFonts = async () => {
+      try {
+        if (window.electronAPI && window.electronAPI.getSystemFonts) {
+          const fonts = await window.electronAPI.getSystemFonts();
+          if (fonts && fonts.length > 0) {
+            setSystemFonts(fonts);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load system fonts:", err);
+      }
+    };
+    loadFonts();
+  }, []);
 
   useEffect(() => {
     if (selectedObject) {
@@ -99,17 +116,18 @@ export default function RightSidebar() {
                   <div className="flex justify-between items-center">
                       <span>Font:</span>
                       <select
-                          className="border px-1 w-20 text-xs dark:bg-gray-800"
+                          className="border px-1 w-32 text-xs dark:bg-gray-800 max-h-48"
                           value={fontProps.fontFamily}
                           onChange={(e) => {
                               setFontProps({...fontProps, fontFamily: e.target.value});
                               updateObjectProp('fontFamily', e.target.value);
                           }}
                       >
-                          <option value="Arial">Arial</option>
-                          <option value="Times New Roman">Times New Roman</option>
-                          <option value="Courier New">Courier</option>
-                          <option value="Helvetica">Helvetica</option>
+                          {systemFonts.map(font => (
+                            <option key={font} value={font} style={{ fontFamily: font }}>
+                              {font}
+                            </option>
+                          ))}
                       </select>
                   </div>
                   <div className="flex space-x-2 mt-2">

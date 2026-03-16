@@ -16,5 +16,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadWzip: (filePath) => ipcRenderer.invoke('load-wzid', filePath),
   checkAutosave: () => ipcRenderer.invoke('check-autosave'),
   getAutosavePath: () => ipcRenderer.invoke('get-autosave-path'),
-  discardAutosave: (path) => ipcRenderer.invoke('discard-autosave', path)
+  discardAutosave: (path) => ipcRenderer.invoke('discard-autosave', path),
+  getSystemFonts: () => ipcRenderer.invoke('get-system-fonts')
 });

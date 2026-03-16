@@ -10,7 +10,7 @@ export default function BottomStatusBar() {
 
     if (isLivePreviewMode) {
       // 1. Save current state
-      originalCanvasState.current = JSON.stringify(window.fabricCanvas.toJSON());
+      originalCanvasState.current = JSON.stringify(window.fabricCanvas.toJSON(['isPhotoPlaceholder', 'isBarcode']));
 
       // 2. Lock objects
       window.fabricCanvas.getObjects().forEach(obj => {
@@ -50,7 +50,7 @@ export default function BottomStatusBar() {
                 const autoPath = await window.electronAPI.getAutosavePath();
                 await window.electronAPI.saveWzip({
                     filePath: autoPath,
-                    layout: window.fabricCanvas.toJSON(),
+                    layout: window.fabricCanvas.toJSON(['isPhotoPlaceholder', 'isBarcode']),
                     data: { records: state.records },
                     meta: { application: "WhizID Pro", version: "1.0.0", is_autosave: true },
                     calibration: state.calibration,
