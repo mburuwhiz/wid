@@ -1,0 +1,17 @@
+import { contextBridge, ipcRenderer } from 'electron';
+
+contextBridge.exposeInMainWorld('electronAPI', {
+  windowMinimize: () => ipcRenderer.invoke('window-minimize'),
+  windowMaximize: () => ipcRenderer.invoke('window-maximize'),
+  windowClose: () => ipcRenderer.invoke('window-close'),
+
+  showOpenDialog: (options) => ipcRenderer.invoke('dialog-open', options),
+  showOpenDirDialog: (options) => ipcRenderer.invoke('dialog-open-dir', options),
+  showSaveDialog: (options) => ipcRenderer.invoke('dialog-save', options),
+
+  readDirectory: (dirPath) => ipcRenderer.invoke('fs-readdir', dirPath),
+  parseExcel: (filePath) => ipcRenderer.invoke('parse-excel', filePath),
+  generatePdf: (params) => ipcRenderer.invoke('generate-pdf', params),
+  saveWzip: (params) => ipcRenderer.invoke('save-wzip', params),
+  loadWzip: (filePath) => ipcRenderer.invoke('load-wzip', filePath),
+});
