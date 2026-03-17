@@ -287,7 +287,9 @@ export default function TopRibbon() {
 
   const insertText = (isDynamic = false, header = '') => {
     if (window.fabricCanvas) {
-      const textVal = isDynamic ? `{{${header}}}` : 'New Text';
+      // The user requested: "the text plaheholder is to be typed as {{name}} with every plaholder being indipedent, soo its not required to have excel imported"
+      // So if it's dynamic but no header was selected (or we just want a generic placeholder), we give them a basic one to edit.
+      const textVal = isDynamic ? (header ? `{{${header}}}` : '{{placeholder}}') : 'New Text';
       const text = new fabric.IText(textVal, {
         left: window.fabricCanvas.width / 2,
         top: window.fabricCanvas.height / 2,
@@ -398,22 +400,29 @@ export default function TopRibbon() {
            <div className="flex h-full">
              <RibbonGroup title="Text">
                <RibbonButton icon={Type} label="Static Text" onClick={() => insertText(false)} />
-               <div className="flex flex-col justify-center mx-2">
-                 <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400 mb-1">Dynamic Field:</span>
-                 <select
-                   className="text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-[#2d2d2d] text-gray-700 dark:text-gray-300 px-2 py-1 outline-none w-32"
-                   onChange={(e) => {
-                     if (e.target.value) {
-                       insertText(true, e.target.value);
-                       e.target.value = '';
-                     }
-                   }}
+               <div className="flex flex-col justify-center mx-2 space-y-1">
+                 <button
+                   onClick={() => insertText(true, '')}
+                   className="text-[11px] font-medium text-white bg-whizpoint-blue hover:bg-blue-600 rounded px-2 py-1 transition-colors"
                  >
-                   <option value="">Select Field...</option>
-                   {availableHeaders.map(h => (
-                     <option key={h} value={h}>{h}</option>
-                   ))}
-                 </select>
+                   + Add Placeholder
+                 </button>
+                 {availableHeaders.length > 0 && (
+                   <select
+                     className="text-[10px] border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-[#2d2d2d] text-gray-700 dark:text-gray-300 px-1 py-0.5 outline-none w-full"
+                     onChange={(e) => {
+                       if (e.target.value) {
+                         insertText(true, e.target.value);
+                         e.target.value = '';
+                       }
+                     }}
+                   >
+                     <option value="">Map from Data...</option>
+                     {availableHeaders.map(h => (
+                       <option key={h} value={h}>{h}</option>
+                     ))}
+                   </select>
+                 )}
                </div>
              </RibbonGroup>
              <RibbonDivider />

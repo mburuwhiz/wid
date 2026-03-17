@@ -25,7 +25,7 @@ export default function RightSidebar() {
   }, []);
 
   useEffect(() => {
-    if (selectedObject) {
+    if (selectedObject && typeof selectedObject === 'object') {
       // 1009 / 85.6 is our pixel to mm ratio
       const ratio = 85.6 / 1009;
       setProps({
@@ -34,16 +34,23 @@ export default function RightSidebar() {
         w: (((selectedObject.width || 0) * (selectedObject.scaleX || 1)) * ratio).toFixed(1),
         h: (((selectedObject.height || 0) * (selectedObject.scaleY || 1)) * ratio).toFixed(1),
         angle: Math.round(selectedObject.angle || 0),
-        opacity: selectedObject.opacity || 1
+        opacity: selectedObject.opacity !== undefined ? selectedObject.opacity : 1
       });
 
+      // Ensure color props don't break if fill is null or a complex object
+      let fillVal = '#000000';
+      if (typeof selectedObject.fill === 'string') fillVal = selectedObject.fill;
+
+      let strokeVal = '#000000';
+      if (typeof selectedObject.stroke === 'string') strokeVal = selectedObject.stroke;
+
       setColorProps({
-          fill: selectedObject.fill || '#000000',
-          stroke: selectedObject.stroke || '#000000',
+          fill: fillVal,
+          stroke: strokeVal,
           strokeWidth: selectedObject.strokeWidth || 0
       });
 
-      if (selectedObject.type === 'i-text') {
+      if (selectedObject.type === 'i-text' || selectedObject.type === 'text') {
           setFontProps({
               fontFamily: selectedObject.fontFamily || 'Arial',
               fontSize: selectedObject.fontSize || 30,
@@ -87,7 +94,7 @@ export default function RightSidebar() {
              </div>
 
              {/* General Styling for shapes and text */}
-             {(selectedObject.type === 'rect' || selectedObject.type === 'circle' || selectedObject.type === 'ellipse' || selectedObject.type === 'i-text') && !selectedObject.isPhotoPlaceholder && !selectedObject.isBarcode && (
+             {(selectedObject.type === 'rect' || selectedObject.type === 'circle' || selectedObject.type === 'ellipse' || selectedObject.type === 'i-text' || selectedObject.type === 'text') && !selectedObject.isPhotoPlaceholder && !selectedObject.isBarcode && (
                 <div className="mt-4 pt-4 border-t space-y-2">
                     <h4 className="font-semibold mb-2 text-xs">STYLE</h4>
                     <div className="flex justify-between items-center">
@@ -97,7 +104,7 @@ export default function RightSidebar() {
                             updateObjectProp('fill', e.target.value);
                         }} className="border p-0 w-8 h-6" />
                     </div>
-                    {selectedObject.type !== 'i-text' && (
+                    {(selectedObject.type !== 'i-text' && selectedObject.type !== 'text') && (
                         <div className="flex justify-between items-center">
                             <span>Stroke:</span>
                             <input type="color" value={colorProps.stroke} onChange={(e) => {
@@ -110,7 +117,7 @@ export default function RightSidebar() {
              )}
 
              {/* Text Formatting Tools */}
-             {selectedObject.type === 'i-text' && (
+             {(selectedObject.type === 'i-text' || selectedObject.type === 'text') && (
                 <div className="mt-4 pt-4 border-t space-y-2">
                   <h4 className="font-semibold mb-2 text-xs">TYPOGRAPHY</h4>
                   <div className="flex justify-between items-center">
