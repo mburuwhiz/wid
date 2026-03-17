@@ -155,6 +155,20 @@ ipcMain.handle('dialog-open-dir', async (event, options) => {
   return result;
 });
 
+// Export Failed Excel
+ipcMain.handle('export-failed-excel', async (event, { filePath, records }) => {
+    try {
+        const worksheet = xlsx.utils.json_to_sheet(records);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, "Failed Records");
+        xlsx.writeFile(workbook, filePath);
+        return true;
+    } catch(err) {
+        console.error("Error exporting excel", err);
+        throw err;
+    }
+});
+
 // Parse Excel
 ipcMain.handle('parse-excel', async (event, filePath) => {
     try {

@@ -5,7 +5,7 @@ import useStore from '../../store/useStore';
 import { toast } from 'sonner';
 
 export default function LeftToolbar() {
-  const { theme, setHasUnsavedChanges } = useStore();
+  const { theme, setHasUnsavedChanges, clipboard, setClipboard } = useStore();
 
   const handleAddText = () => {
     if (window.fabricCanvas) {
@@ -54,6 +54,22 @@ export default function LeftToolbar() {
       });
       window.fabricCanvas.add(ellipse);
       window.fabricCanvas.setActiveObject(ellipse);
+      setHasUnsavedChanges(true);
+    }
+  };
+
+  const handleAddLine = () => {
+    if (window.fabricCanvas) {
+      const line = new fabric.Line([-50, 0, 50, 0], {
+        left: window.fabricCanvas.width / 2,
+        top: window.fabricCanvas.height / 2,
+        stroke: '#000000',
+        strokeWidth: 2,
+        originX: 'center',
+        originY: 'center',
+      });
+      window.fabricCanvas.add(line);
+      window.fabricCanvas.setActiveObject(line);
       setHasUnsavedChanges(true);
     }
   };
@@ -162,13 +178,69 @@ export default function LeftToolbar() {
   };
 
   useEffect(() => {
+    const Copy = () => {
+      if (!window.fabricCanvas) return;
+      const activeObj = window.fabricCanvas.getActiveObject();
+      if (!activeObj || activeObj.isEditing) return;
+      activeObj.clone((cloned) => {
+        setClipboard(cloned);
+      }, ['isPhotoPlaceholder', 'isBarcode']);
+    };
+
+    const Paste = () => {
+      const currentClipboard = useStore.getState().clipboard;
+      if (!window.fabricCanvas || !currentClipboard) return;
+
+      const activeObj = window.fabricCanvas.getActiveObject();
+      if (activeObj && activeObj.isEditing) return;
+
+      currentClipboard.clone((clonedObj) => {
+        window.fabricCanvas.discardActiveObject();
+        clonedObj.set({
+          left: clonedObj.left + 10,
+          top: clonedObj.top + 10,
+          evented: true,
+        });
+        if (clonedObj.type === 'activeSelection') {
+          clonedObj.canvas = window.fabricCanvas;
+          clonedObj.forEachObject(function(obj) {
+            window.fabricCanvas.add(obj);
+          });
+          clonedObj.setCoords();
+        } else {
+          window.fabricCanvas.add(clonedObj);
+        }
+
+        // Update clipboard object for consecutive pastes
+        currentClipboard.top += 10;
+        currentClipboard.left += 10;
+        setClipboard(currentClipboard);
+
+        window.fabricCanvas.setActiveObject(clonedObj);
+        window.fabricCanvas.requestRenderAll();
+        setHasUnsavedChanges(true);
+      }, ['isPhotoPlaceholder', 'isBarcode']);
+    };
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        // Only delete if we are not editing text inside an IText object
-        if (window.fabricCanvas) {
-          const activeObj = window.fabricCanvas.getActiveObject();
-          if (activeObj && activeObj.isEditing) return;
+      if (window.fabricCanvas) {
+        const activeObj = window.fabricCanvas.getActiveObject();
+        if (activeObj && activeObj.isEditing) return;
+
+        if (e.key === 'Delete' || e.key === 'Backspace') {
           handleDelete();
+        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+          Copy();
+        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') {
+          Paste();
+        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+          Copy();
+          handleDelete();
+        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+          e.preventDefault();
+          Copy();
+          // slight delay for duplicate to ensure clipboard state set
+          setTimeout(Paste, 50);
         }
       }
     };
@@ -200,6 +272,13 @@ export default function LeftToolbar() {
         <ToolButton icon={ImageIcon} label="Image (I)" onClick={handleAddImage} />
         <ToolButton icon={Square} label="Rectangle (R)" onClick={handleAddRect} />
         <ToolButton icon={Circle} label="Ellipse (O)" onClick={handleAddEllipse} />
+        <button
+          className="w-10 h-10 flex items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-gray-700 mx-auto my-1 text-gray-700 dark:text-gray-300 transition-colors"
+          title="Line (L)"
+          onClick={handleAddLine}
+        >
+          <div className="w-5 h-0.5 bg-current transform -rotate-45" />
+        </button>
         <ToolButton icon={Barcode} label="Barcode (B)" onClick={handleAddBarcode} />
 
         <div className="w-8 h-px bg-gray-300 dark:bg-gray-600 mx-auto my-2" />

@@ -137,6 +137,21 @@ export default function RightSidebar() {
                           ))}
                       </select>
                   </div>
+                  <div className="flex justify-between items-center mt-2">
+                      <span>Size (px):</span>
+                      <input
+                          type="number"
+                          min="1"
+                          max="200"
+                          className="border px-1 w-16 text-xs dark:bg-gray-800"
+                          value={fontProps.fontSize}
+                          onChange={(e) => {
+                              const size = parseInt(e.target.value, 10) || 12;
+                              setFontProps({...fontProps, fontSize: size});
+                              updateObjectProp('fontSize', size);
+                          }}
+                      />
+                  </div>
                   <div className="flex space-x-2 mt-2">
                       <button
                           className={`flex-1 border p-1 rounded ${fontProps.fontWeight === 'bold' ? 'bg-blue-100 dark:bg-blue-900 border-blue-400' : ''}`}

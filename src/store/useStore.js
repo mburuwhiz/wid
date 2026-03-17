@@ -17,6 +17,9 @@ const useStore = create((set, get) => ({
   selectedObject: null,
   setSelectedObject: (obj) => set({ selectedObject: obj }),
 
+  clipboard: null,
+  setClipboard: (obj) => set({ clipboard: obj }),
+
   // --- Document Data (wzid) ---
   fileName: 'Untitled.wzid',
   setFileName: (name) => set({ fileName: name }),

@@ -1,20 +1,66 @@
 import React, { useState } from 'react';
 import useStore from '../../store/useStore';
+import { toast } from 'sonner';
 
 export default function BatchReportModal({ onClose }) {
   const { theme, records, fileName } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all'); // all, complete, failed
+  const [exporting, setExporting] = useState(false);
 
   // Very basic validation: If a record has photoid but no _photoPath, it's failed.
   // We'll also consider empty 'name' failed for demo purposes.
-  const processedRecords = records.map(r => ({
-      ...r,
-      _status: (r.photoid && !r._photoPath) || !r.name ? 'failed' : 'complete'
-  }));
+  const processedRecords = records.map(r => {
+      const missing = [];
+      if (r.photoid && !r._photoPath) missing.push('Photo Missing');
+      if (!r.name) missing.push('Name Missing');
+
+      return {
+          ...r,
+          _status: missing.length > 0 ? 'failed' : 'complete',
+          _missingFields: missing
+      };
+  });
 
   const completeCount = processedRecords.filter(r => r._status === 'complete').length;
   const failedCount = processedRecords.filter(r => r._status === 'failed').length;
+
+  const handleExportFailed = async () => {
+      const failedRecords = processedRecords.filter(r => r._status === 'failed').map(r => {
+          const out = { ...r, ErrorReason: r._missingFields.join(', ') };
+          delete out._status;
+          delete out._missingFields;
+          delete out._photoPath;
+          return out;
+      });
+
+      if (failedRecords.length === 0) {
+          toast.info("No failed records to export");
+          return;
+      }
+
+      try {
+          setExporting(true);
+          const result = await window.electronAPI.showSaveDialog({
+              title: 'Export Failed Records',
+              defaultPath: 'Failed_Records.xlsx',
+              filters: [{ name: 'Excel Workbook', extensions: ['xlsx'] }]
+          });
+
+          if (!result.canceled && result.filePath) {
+              await window.electronAPI.exportFailedExcel({
+                  filePath: result.filePath,
+                  records: failedRecords
+              });
+              toast.success("Failed records exported successfully");
+          }
+      } catch (err) {
+          console.error(err);
+          toast.error("Error exporting failed records");
+      } finally {
+          setExporting(false);
+      }
+  };
 
   const filteredRecords = processedRecords.filter(r => {
       if (filter === 'complete' && r._status !== 'complete') return false;
@@ -48,7 +94,13 @@ export default function BatchReportModal({ onClose }) {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="border px-3 py-1.5 rounded w-64 text-black dark:text-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
             />
-            <button className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded">📥 Export</button>
+            <button
+                onClick={handleExportFailed}
+                disabled={exporting || failedCount === 0}
+                className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-gray-700"
+            >
+                {exporting ? '⏳ Exporting...' : '📥 Export Failed'}
+            </button>
         </div>
 
         {/* Table */}

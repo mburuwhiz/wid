@@ -16,7 +16,8 @@ export default function TopRibbon() {
   const {
     theme, activeTab, setActiveTab, setRecords, records,
     calibration, setHasUnsavedChanges, setFileName, setCalibration,
-    undo, redo, history, historyIndex
+    undo, redo, history, historyIndex,
+    isLivePreviewMode, setLivePreviewMode, currentRecordIndex, setCurrentRecordIndex
   } = useStore();
 
   const [loading, setLoading] = useState(false);
@@ -99,7 +100,9 @@ export default function TopRibbon() {
              const baseName = lowerFile.slice(0, -ext.length);
              // use the first matching one alphabetically
              if (!fileMap[baseName]) {
-                 fileMap[baseName] = `whizid://${dirPath}/${file}`;
+                 // Fix paths for Windows, replace backslashes with forward slashes
+                 const normalizedDir = dirPath.replace(/\\/g, '/');
+                 fileMap[baseName] = `whizid://${normalizedDir}/${file}`;
              }
            }
         });
@@ -208,12 +211,28 @@ export default function TopRibbon() {
       if (!result.canceled && result.filePath) {
         setLoading(true);
 
+        // Ensure accurate filtering of valid records based on actual properties
+        const validRecords = records.filter(record => {
+            // Re-apply the logic used in BatchReportModal right at export time
+            // to ensure no failed states are exported
+            const missing = [];
+            if (record.photoid && !record._photoPath) missing.push('Photo Missing');
+            if (!record.name) missing.push('Name Missing');
+            return missing.length === 0;
+        });
+
+        if (validRecords.length === 0) {
+            toast.error("No valid completed records to export. Please fix missing data in Batch Data tab.");
+            setLoading(false);
+            return;
+        }
+
         // Render each card to base64
         const images = [];
         const originalState = JSON.stringify(window.fabricCanvas.toJSON(['isPhotoPlaceholder', 'isBarcode']));
 
-        for (let i = 0; i < records.length; i++) {
-           const record = records[i];
+        for (let i = 0; i < validRecords.length; i++) {
+           const record = validRecords[i];
 
            // A quick internal function mirroring BottomStatusBar's applyRecordToCanvas logic
            // Ideally this is centralized, but for POC we duplicate the replacement logic
@@ -259,7 +278,7 @@ export default function TopRibbon() {
 
         toast.promise(
           window.electronAPI.generatePdf({
-            records,
+            records: validRecords,
             calibration,
             outputPath: result.filePath,
             images,
@@ -314,6 +333,8 @@ export default function TopRibbon() {
       shape = new fabric.Rect({ ...center, fill: '#cccccc', width: 100, height: 100, originX: 'center', originY: 'center' });
     } else if (type === 'ellipse') {
       shape = new fabric.Ellipse({ ...center, fill: '#cccccc', rx: 50, ry: 50, originX: 'center', originY: 'center' });
+    } else if (type === 'line') {
+      shape = new fabric.Line([-50, 0, 50, 0], { ...center, stroke: '#000000', strokeWidth: 2, originX: 'center', originY: 'center' });
     } else if (type === 'photo') {
       shape = new fabric.Rect({
         ...center, fill: '#e0e0e0', stroke: '#999999', strokeWidth: 2, strokeDashArray: [5, 5],
@@ -325,6 +346,46 @@ export default function TopRibbon() {
       window.fabricCanvas.add(shape);
       window.fabricCanvas.setActiveObject(shape);
       setHasUnsavedChanges(true);
+    }
+  };
+
+  const handleAddImage = async () => {
+    try {
+      const result = await window.electronAPI.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp'] }]
+      });
+
+      if (!result.canceled && result.filePaths.length > 0) {
+        const filePath = result.filePaths[0];
+
+        // Normalize path for Windows
+        const normalizedPath = filePath.replace(/\\/g, '/');
+        const dirPath = normalizedPath.substring(0, Math.max(normalizedPath.lastIndexOf('/'), normalizedPath.lastIndexOf('\\')));
+        await window.electronAPI.readDirectory(dirPath);
+
+        const imgUrl = `whizid://${normalizedPath}`;
+
+        fabric.Image.fromURL(imgUrl, (img) => {
+           if (!img) {
+               toast.error('Failed to load image');
+               return;
+           }
+           if (img.width > 500) img.scaleToWidth(500);
+           img.set({
+              left: window.fabricCanvas.width / 2,
+              top: window.fabricCanvas.height / 2,
+              originX: 'center',
+              originY: 'center',
+           });
+           window.fabricCanvas.add(img);
+           window.fabricCanvas.setActiveObject(img);
+           setHasUnsavedChanges(true);
+        }, { crossOrigin: 'anonymous' });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to insert image.');
     }
   };
 
@@ -384,9 +445,64 @@ export default function TopRibbon() {
         {activeTab === 'HOME' && (
            <div className="flex h-full">
              <RibbonGroup title="Clipboard">
-               <RibbonButton icon={ClipboardPaste} label="Paste" onClick={() => toast.info('Use Ctrl+V')} />
-               <RibbonButton icon={Scissors} label="Cut" onClick={() => toast.info('Use Ctrl+X')} />
-               <RibbonButton icon={Copy} label="Copy" onClick={() => toast.info('Use Ctrl+C')} />
+               <RibbonButton
+                 icon={ClipboardPaste}
+                 label="Paste"
+                 disabled={!clipboard}
+                 onClick={() => {
+                   if (!window.fabricCanvas || !clipboard) return;
+                   const currentClipboard = useStore.getState().clipboard;
+                   currentClipboard.clone((clonedObj) => {
+                     window.fabricCanvas.discardActiveObject();
+                     clonedObj.set({ left: clonedObj.left + 10, top: clonedObj.top + 10, evented: true });
+                     if (clonedObj.type === 'activeSelection') {
+                       clonedObj.canvas = window.fabricCanvas;
+                       clonedObj.forEachObject(function(obj) { window.fabricCanvas.add(obj); });
+                       clonedObj.setCoords();
+                     } else {
+                       window.fabricCanvas.add(clonedObj);
+                     }
+                     currentClipboard.top += 10;
+                     currentClipboard.left += 10;
+                     setClipboard(currentClipboard);
+                     window.fabricCanvas.setActiveObject(clonedObj);
+                     window.fabricCanvas.requestRenderAll();
+                     setHasUnsavedChanges(true);
+                   }, ['isPhotoPlaceholder', 'isBarcode']);
+                 }}
+               />
+               <RibbonButton
+                 icon={Scissors}
+                 label="Cut"
+                 onClick={() => {
+                   if (!window.fabricCanvas) return;
+                   const activeObj = window.fabricCanvas.getActiveObject();
+                   if (!activeObj || activeObj.isEditing) return;
+                   activeObj.clone((cloned) => {
+                     setClipboard(cloned);
+                   }, ['isPhotoPlaceholder', 'isBarcode']);
+                   if (activeObj.type === 'activeSelection') {
+                     activeObj.forEachObject(obj => window.fabricCanvas.remove(obj));
+                   }
+                   window.fabricCanvas.remove(activeObj);
+                   window.fabricCanvas.discardActiveObject();
+                   window.fabricCanvas.requestRenderAll();
+                   setHasUnsavedChanges(true);
+                 }}
+               />
+               <RibbonButton
+                 icon={Copy}
+                 label="Copy"
+                 onClick={() => {
+                   if (!window.fabricCanvas) return;
+                   const activeObj = window.fabricCanvas.getActiveObject();
+                   if (!activeObj || activeObj.isEditing) return;
+                   activeObj.clone((cloned) => {
+                     setClipboard(cloned);
+                     toast.success('Copied to clipboard');
+                   }, ['isPhotoPlaceholder', 'isBarcode']);
+                 }}
+               />
              </RibbonGroup>
              <RibbonDivider />
              <RibbonGroup title="History">
@@ -427,13 +543,22 @@ export default function TopRibbon() {
              </RibbonGroup>
              <RibbonDivider />
              <RibbonGroup title="Media">
-               <RibbonButton icon={ImageIcon} label="Static Image" onClick={() => toast.info('Use left toolbar for image picker')} />
+               <RibbonButton icon={ImageIcon} label="Static Image" onClick={handleAddImage} />
                <RibbonButton icon={ImagePlus} label="Photo Slot" onClick={() => insertShape('photo')} />
              </RibbonGroup>
              <RibbonDivider />
              <RibbonGroup title="Shapes">
                <RibbonButton icon={Square} label="Rectangle" onClick={() => insertShape('rect')} />
                <RibbonButton icon={Circle} label="Ellipse" onClick={() => insertShape('ellipse')} />
+               <button
+                 onClick={() => insertShape('line')}
+                 className="flex flex-col items-center justify-center p-2 min-w-[64px] rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+               >
+                 <div className="w-6 h-6 flex items-center justify-center mb-1">
+                   <div className="w-5 h-0.5 bg-gray-700 dark:bg-gray-300 transform -rotate-45"></div>
+                 </div>
+                 <span className="text-[11px] text-gray-600 dark:text-gray-400 font-medium tracking-wide">Line</span>
+               </button>
              </RibbonGroup>
            </div>
         )}
@@ -451,7 +576,30 @@ export default function TopRibbon() {
            </div>
         )}
 
-        {loading && <span className="text-xs text-gray-500 self-center ml-auto pr-4">Processing...</span>}
+        {/* Right Section: Live Preview UI moved here from BottomStatusBar */}
+        <div className="ml-auto flex flex-col justify-center items-end pr-4 space-y-2">
+          <div className="flex items-center space-x-2 bg-gray-200 dark:bg-gray-700 rounded-full p-1 cursor-pointer text-[10px]" onClick={() => setLivePreviewMode(!isLivePreviewMode)}>
+            <div className={`px-2 py-0.5 rounded-full ${!isLivePreviewMode ? 'bg-white shadow dark:bg-gray-600 text-black dark:text-white' : 'text-gray-500'}`}>Design</div>
+            <div className={`px-2 py-0.5 rounded-full ${isLivePreviewMode ? 'bg-white shadow dark:bg-gray-600 text-black dark:text-white' : 'text-gray-500'}`}>Live Preview</div>
+          </div>
+
+          {isLivePreviewMode && (
+            <div className="flex items-center space-x-1 text-[11px]">
+              <button
+                className="px-1 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
+                onClick={() => currentRecordIndex > 0 && setCurrentRecordIndex(currentRecordIndex - 1)}
+                disabled={currentRecordIndex === 0}
+              >←</button>
+              <span>{currentRecordIndex + 1} of {records.length || 0}</span>
+              <button
+                className="px-1 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
+                onClick={() => currentRecordIndex < records.length - 1 && setCurrentRecordIndex(currentRecordIndex + 1)}
+                disabled={currentRecordIndex >= records.length - 1}
+              >→</button>
+            </div>
+          )}
+          {loading && <span className="text-[10px] text-gray-500">Processing...</span>}
+        </div>
       </div>
       {showCalibration && <CalibrationModal onClose={() => setShowCalibration(false)} />}
       {showBatchReport && <BatchReportModal onClose={() => setShowBatchReport(false)} />}

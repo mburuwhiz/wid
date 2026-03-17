@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import useStore from '../../store/useStore';
+import { toast } from 'sonner';
 
 export default function BottomStatusBar() {
   const { theme, zoomLevel, setZoomLevel, hasUnsavedChanges, isLivePreviewMode, setLivePreviewMode, currentRecordIndex, setCurrentRecordIndex, records } = useStore();
@@ -163,21 +164,8 @@ export default function BottomStatusBar() {
         )}
       </div>
 
-      {/* Right Section: Batch Toggle */}
+      {/* Right Section: Moved Live Preview to Top Ribbon */}
       <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2 bg-gray-200 dark:bg-gray-700 rounded-full p-1 cursor-pointer" onClick={() => setLivePreviewMode(!isLivePreviewMode)}>
-          <div className={`px-2 py-0.5 rounded-full ${!isLivePreviewMode ? 'bg-white shadow dark:bg-gray-600 text-black dark:text-white' : 'text-gray-500'}`}>Design</div>
-          <div className={`px-2 py-0.5 rounded-full ${isLivePreviewMode ? 'bg-white shadow dark:bg-gray-600 text-black dark:text-white' : 'text-gray-500'}`}>Live Preview</div>
-        </div>
-
-        {isLivePreviewMode && (
-          <div className="flex items-center space-x-2">
-            <button className="px-1 hover:bg-gray-300 dark:hover:bg-gray-600" onClick={prevRecord} disabled={currentRecordIndex === 0}>←</button>
-            <span>Record {currentRecordIndex + 1} of {records.length || 0}</span>
-            <button className="px-1 hover:bg-gray-300 dark:hover:bg-gray-600" onClick={nextRecord} disabled={currentRecordIndex >= records.length - 1}>→</button>
-            <input type="text" placeholder="🔍 Search..." className="w-24 border rounded px-1 ml-2 text-black" disabled />
-          </div>
-        )}
       </div>
     </div>
   );
