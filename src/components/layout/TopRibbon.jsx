@@ -17,7 +17,8 @@ export default function TopRibbon() {
     theme, activeTab, setActiveTab, setRecords, records,
     calibration, setHasUnsavedChanges, setFileName, setCalibration,
     undo, redo, history, historyIndex,
-    isLivePreviewMode, setLivePreviewMode, currentRecordIndex, setCurrentRecordIndex
+    isLivePreviewMode, setLivePreviewMode, currentRecordIndex, setCurrentRecordIndex,
+    clipboard, setClipboard
   } = useStore();
 
   const [loading, setLoading] = useState(false);
